@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-import langchain_rag_app
+import Week1.langchain_rag_app as langchain_rag_app
 
 
 
