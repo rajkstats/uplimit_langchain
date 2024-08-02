@@ -2,13 +2,19 @@ import asyncio
 import aiohttp
 import langchain_rag_app
 
+
+
 async def telegram_bot_response():
     import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
     os.environ['LANGCHAIN_TRACING_V2'] = 'true'
     os.environ['LANGCHAIN_ENDPOINT'] = "https://api.smith.langchain.com"
-    os.environ['LANGCHAIN_API_KEY'] = "ENTER LANGCHAIN API KEY"
-    os.environ['LANGCHAIN_PROJECT'] = "ENTER LANGCHAIN PROJECT"
-    bot_token = 'ENTER YOUR BOT TOKEN HERE'
+    LANGCHAIN_API_KEY = os.environ.get("LANGCHAIN_API_KEY")
+    OPENAI_API_KEY=os.environ.get("OPENAI_API_KEY")
+    os.environ['LANGCHAIN_PROJECT'] = "Uplimit - PillPal - 9d3ad54d"
+    bot_token = os.environ.get("BOT_TOKEN")
     api_url = f'https://api.telegram.org/bot{bot_token}/getUpdates'
     send_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
     offset = None  # Variable to manage the offset of updates

@@ -1,6 +1,5 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-#from langchain_community.vectorstores import Chroma
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.prompts import SystemMessagePromptTemplate
@@ -9,38 +8,47 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from operator import itemgetter
+from dotenv import load_dotenv
+import os
 
-OPENAI_API_KEY='ENTER YOUR API KEY HERE'
+load_dotenv()
+
+OPENAI_API_KEY=os.environ.get("OPENAI_API_KEY")
 
 # Load PDF file
 loader = PyMuPDFLoader('/workspaces/uplimit_langchain/pil.3474.pdf')
 data = loader.load()
 
-# Split and Embed
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
-splits = text_splitter.split_documents(data)
+# Split leaflet into chunks
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 1000,
+    chunk_overlap  = 100
+)
+split_drug_docs = text_splitter.split_documents(data)
 embedding_model = OpenAIEmbeddings(model='text-embedding-3-small', openai_api_key=OPENAI_API_KEY)
-vector_store = FAISS.from_documents(documents=splits, embedding=embedding_model)
+vector_store = FAISS.from_documents(documents=split_drug_docs, embedding=embedding_model)
 
 # Create Prompt
 qna_prompt = """
-    You are an expert medical assistant who is able to read information from medicine leaflets
-    and use that to answer any questions that are asked of you.
-    You explain things simply and in an easy to understand manner.
-    If you still can't figure out the answer, just say that you're unable to answer.
+You are an AI assistant for reading information from medicine leaflets and you explain things in simple manner for a human to understand 
 
-    You are provided with the Question and Context below to help you answer.
+If you don't know the answer, simply state that you don't have enough information to provide an answer. Do not attempt to make up an answer.
 
-    Question: {question}
-    Context: {context}
-    Answer:
+If the user greets you with a greeting like "Hi", "Hello", or "How are you", respond in a friendly manner.
+
+Use the following pieces of context to answer the user's question
+question: {question}
+context : {context}
+Answer:
 """
-qna_prompt_template = ChatPromptTemplate.from_messages(
-        [
-            SystemMessagePromptTemplate.from_template("You are a helpful AI assistant"),
-            HumanMessagePromptTemplate.from_template(qna_prompt),
-        ]
-)
+
+# Define messages for the chatbot prompt
+messages = [
+    SystemMessagePromptTemplate.from_template("You're a helpful AI assistant"),
+    HumanMessagePromptTemplate.from_template(qna_prompt),
+]
+
+qna_prompt_template = ChatPromptTemplate.from_messages(messages)
 
 # Create LLM
 llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key=OPENAI_API_KEY)
